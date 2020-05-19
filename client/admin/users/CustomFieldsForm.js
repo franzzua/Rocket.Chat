@@ -42,12 +42,7 @@ const CustomSelect = (props) => {
 };
 
 const CustomFieldsAssembler = ({ customFields, didUpdate, customFieldsData, setCustomFieldsData, ...props }) => Object.entries(customFields).map(([key, value]) => {
-	const [state, setState] = useState((customFieldsData && customFieldsData[key]) ?? value.defaultValue ?? '');
-	useEffect(() => {
-		if (didUpdate) {
-			setCustomFieldsData({ ...customFieldsData, [key]: state });
-		}
-	}, [state]);
+
 	return value.type === 'text'
 		? <CustomTextInput key={key} name={key} {...value} setState={setState} state={state} {...props}/>
 		: <CustomSelect key={key} name={key} {...value} setState={setState} state={state} {...props}/>;
@@ -55,18 +50,20 @@ const CustomFieldsAssembler = ({ customFields, didUpdate, customFieldsData, setC
 
 export default function CustomFieldsForm({ customFieldsData, setCustomFieldsData, ...props }) {
 	const fields = useSetting('Accounts_CustomFields');
+	{ ...fields, ...customFieldsData}
 
-	const parsedFields = useMemo(() => JSON.parse(fields), [fields]);
+	// USE FORM
+	const parsedFields = useMemo(() => JSON.parse(fields), []);
 
 	const [didUpdate, setDidUpdate] = useState(false);
 
-	useEffect(() => {
-		setDidUpdate(true);
-		if (!Object.values(customFieldsData).length) {
-			const initialData = Object.entries(parsedFields).reduce((data, [key, value]) => { data[key] = value.defaultValue ?? ''; return data; }, {});
-			setCustomFieldsData(initialData);
-		}
-	}, []);
+	// useEffect(() => { SETA O DEFAULT NO FORM
+	// 	setDidUpdate(true);
+	// 	if (!Object.values(customFieldsData).length) {
+	// 		const initialData = Object.entries(parsedFields).reduce((data, [key, value]) => { data[key] = value.defaultValue ?? ''; return data; }, {});
+	// 		setCustomFieldsData(initialData);
+	// 	}
+	// }, []);
 
 	return <CustomFieldsAssembler didUpdate={didUpdate} customFields={parsedFields} customFieldsData={customFieldsData} setCustomFieldsData={setCustomFieldsData} {...props}/>;
 }

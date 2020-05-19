@@ -2,7 +2,6 @@ import React, { useMemo, useState, useCallback } from 'react';
 import { Field, TextInput, Box, Skeleton, ToggleSwitch, Icon, TextAreaInput, MultiSelectFiltered, Margins, Button, Divider } from '@rocket.chat/fuselage';
 
 import { useTranslation } from '../../contexts/TranslationContext';
-import { useEndpointData } from '../../hooks/useEndpointData';
 import { useEndpointDataExperimental, ENDPOINT_STATES } from '../../hooks/useEndpointDataExperimental';
 import { useEndpointAction } from '../../hooks/useEndpointAction';
 import { useEndpointUpload } from '../../hooks/useEndpointUpload';
@@ -14,10 +13,10 @@ import VerticalBar from '../../components/basic/VerticalBar';
 
 export function EditUserWithData({ userId, ...props }) {
 	const t = useTranslation();
-	const roleData = useEndpointData('roles.list', '') || {};
+	const { data: roleData, state: roleState, error: roleError } = useEndpointDataExperimental('roles.list', '') || {};
 	const { data, state, error } = useEndpointDataExperimental('users.info', useMemo(() => ({ userId }), [userId]));
 
-	if (state === ENDPOINT_STATES.LOADING) {
+	if ([state, roleState].includes(ENDPOINT_STATES.LOADING)) {
 		return <Box w='full' pb='x24' {...props}>
 			<Skeleton mbe='x4'/>
 			<Skeleton mbe='x8' />
@@ -28,7 +27,7 @@ export function EditUserWithData({ userId, ...props }) {
 		</Box>;
 	}
 
-	if (error) {
+	if (error || roleError) {
 		return <Box mbs='x16' {...props}>{t('User_not_found')}</Box>;
 	}
 
@@ -106,7 +105,7 @@ export function EditUser({ data, roles, ...props }) {
 	const testEqual = (a, b) => a === b || !(a || b);
 	const handleChange = (field, currentValue, getValue = (e) => e.currentTarget.value, areEqual = testEqual) => (e) => setNewData({ ...newData, [field]: areEqual(getValue(e), currentValue) ? null : getValue(e) });
 
-	const availableRoles = roles.map(({ _id, description }) => [_id, description || _id]);
+	const availableRoles = roles.map(({ _id, description }) => [_id, description || _id]);// memo
 	const selectedRoles = newData.roles ?? data.roles;
 	const name = newData.name ?? data.name ?? '';
 	const username = newData.username ?? data.username;
@@ -182,8 +181,10 @@ export function EditUser({ data, roles, ...props }) {
 			</Field.Row>
 		</Field>
 		<Divider />
-		<Box fontScale='s2'>{t('Custom_Fields')}</Box>
-		<CustomFieldsForm customFieldsData={customFieldsData} setCustomFieldsData={setCustomFieldsData}/>
+		{ customFieldsData && <>
+			<Box fontScale='s2'>{t('Custom_Fields')}</Box>
+			<CustomFieldsForm customFieldsData={customFieldsData} setCustomFieldsData={setCustomFieldsData}/>
+		</>}
 		<Field>
 			<Field.Row>
 				<Box display='flex' flexDirection='row' justifyContent='space-between' w='full'>
